@@ -2,6 +2,8 @@ CREATE TABLE IF NOT EXISTS "users" (
     "id" serial PRIMARY KEY,
     "username" varchar(255) UNIQUE NOT NULL,
     "password" varchar(255) NOT NULL,
+    "avg_interest" jsonb NOT NULL DEFAULT '[]',
+    "recomm_plylist_id" INTEGER NOT NULL,
     "created_at" Timestamp WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
@@ -36,4 +38,4 @@ CREATE TABLE IF NOT EXISTS "interactions" (
     "created_at" Timestamp WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
-INSERT INTO users(users, password) VALUES('admin', );
+INSERT INTO users(users, password) VALUES('admin','\x123');

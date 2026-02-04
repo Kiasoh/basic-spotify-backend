@@ -18,12 +18,12 @@ services:
     networks:
       - ds_backend_network
 
-  ds_backend:
+  backend_ds:
     build:
       context: .
       dockerfile: Dockerfile
     image: ghcr.io/kiasoh/basic-spotify-backend
-    container_name: backend-ds
+    container_name: backend_ds
     restart: always
     depends_on:
       - ds_db
