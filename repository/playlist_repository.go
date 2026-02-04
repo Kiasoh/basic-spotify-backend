@@ -3,19 +3,21 @@ package repository
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kiasoh/basic-spotify-backend/models"
 )
 
 type PlaylistRepository interface {
 	CreatePlaylist(ctx context.Context, playlist *models.Playlist) (int, error)
+	CreatePlaylistInTx(ctx context.Context, tx pgx.Tx, playlist *models.Playlist) (int, error)
 	GetPlaylistByID(ctx context.Context, id int) (*models.Playlist, error)
 	UpdatePlaylist(ctx context.Context, playlist *models.Playlist) error
 	DeletePlaylist(ctx context.Context, id int) error
 	ListPlaylistsByOwner(ctx context.Context, ownerID int) ([]models.Playlist, error)
-    AddSongToPlaylist(ctx context.Context, playlistID int, songID int) error
-    RemoveSongFromPlaylist(ctx context.Context, playlistID int, songID int) error
-    GetSongsInPlaylist(ctx context.Context, playlistID int) ([]models.Song, error)
+	AddSongToPlaylist(ctx context.Context, playlistID int, songID int) error
+	RemoveSongFromPlaylist(ctx context.Context, playlistID int, songID int) error
+	GetSongsInPlaylist(ctx context.Context, playlistID int) ([]models.Song, error)
 }
 
 type playlistRepository struct {
@@ -27,16 +29,23 @@ func NewPlaylistRepository(db *pgxpool.Pool) PlaylistRepository {
 }
 
 func (r *playlistRepository) CreatePlaylist(ctx context.Context, playlist *models.Playlist) (int, error) {
-	query := `INSERT INTO playlists (name, owner_id, modifyable) VALUES ($1, $2, $3) RETURNING id`
+	query := `INSERT INTO playlists (name, owner_id, modifyable, description) VALUES ($1, $2, $3, $4) RETURNING id`
 	var id int
-	err := r.db.QueryRow(ctx, query, playlist.Name, playlist.OwnerID, playlist.Modifyable).Scan(&id)
+	err := r.db.QueryRow(ctx, query, playlist.Name, playlist.OwnerID, playlist.Modifyable, playlist.Description).Scan(&id)
+	return id, err
+}
+
+func (r *playlistRepository) CreatePlaylistInTx(ctx context.Context, tx pgx.Tx, playlist *models.Playlist) (int, error) {
+	query := `INSERT INTO playlists (name, owner_id, modifyable, description) VALUES ($1, $2, $3, $4) RETURNING id`
+	var id int
+	err := tx.QueryRow(ctx, query, playlist.Name, playlist.OwnerID, playlist.Modifyable, playlist.Description).Scan(&id)
 	return id, err
 }
 
 func (r *playlistRepository) GetPlaylistByID(ctx context.Context, id int) (*models.Playlist, error) {
-	query := `SELECT id, name, owner_id, modifyable, created_at FROM playlists WHERE id = $1`
+	query := `SELECT id, name, description, owner_id, modifyable, created_at FROM playlists WHERE id = $1`
 	playlist := &models.Playlist{}
-	err := r.db.QueryRow(ctx, query, id).Scan(&playlist.ID, &playlist.Name, &playlist.OwnerID, &playlist.Modifyable, &playlist.CreatedAt)
+	err := r.db.QueryRow(ctx, query, id).Scan(&playlist.ID, &playlist.Name, &playlist.Description, &playlist.OwnerID, &playlist.Modifyable, &playlist.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -44,8 +53,8 @@ func (r *playlistRepository) GetPlaylistByID(ctx context.Context, id int) (*mode
 }
 
 func (r *playlistRepository) UpdatePlaylist(ctx context.Context, playlist *models.Playlist) error {
-	query := `UPDATE playlists SET name = $1, modifyable = $2 WHERE id = $3`
-	_, err := r.db.Exec(ctx, query, playlist.Name, playlist.Modifyable, playlist.ID)
+	query := `UPDATE playlists SET name = $1, modifyable = $2, description = $3 WHERE id = $4`
+	_, err := r.db.Exec(ctx, query, playlist.Name, playlist.Modifyable, playlist.Description, playlist.ID)
 	return err
 }
 
@@ -70,7 +79,7 @@ func (r *playlistRepository) DeletePlaylist(ctx context.Context, id int) error {
 }
 
 func (r *playlistRepository) ListPlaylistsByOwner(ctx context.Context, ownerID int) ([]models.Playlist, error) {
-	query := `SELECT id, name, owner_id, modifyable, created_at FROM playlists WHERE owner_id = $1`
+	query := `SELECT id, name, description, owner_id, modifyable, created_at FROM playlists WHERE owner_id = $1`
 	rows, err := r.db.Query(ctx, query, ownerID)
 	if err != nil {
 		return nil, err
@@ -80,7 +89,7 @@ func (r *playlistRepository) ListPlaylistsByOwner(ctx context.Context, ownerID i
 	var playlists []models.Playlist
 	for rows.Next() {
 		var playlist models.Playlist
-		if err := rows.Scan(&playlist.ID, &playlist.Name, &playlist.OwnerID, &playlist.Modifyable, &playlist.CreatedAt); err != nil {
+		if err := rows.Scan(&playlist.ID, &playlist.Name, &playlist.Description, &playlist.OwnerID, &playlist.Modifyable, &playlist.CreatedAt); err != nil {
 			return nil, err
 		}
 		playlists = append(playlists, playlist)

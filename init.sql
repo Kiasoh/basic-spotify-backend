@@ -38,4 +38,3 @@ CREATE TABLE IF NOT EXISTS "interactions" (
     "created_at" Timestamp WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
-INSERT INTO users(users, password) VALUES('admin','\x123');

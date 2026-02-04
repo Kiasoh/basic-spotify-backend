@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/segmentio/kafka-go"
 
 	"github.com/kiasoh/basic-spotify-backend/handlers"
 	"github.com/kiasoh/basic-spotify-backend/middleware"
@@ -36,6 +37,18 @@ func ConnectSQL() *pgxpool.Pool {
 	}
 	log.Println("Database connection established")
 	return pool
+}
+
+func InitKafka() *kafka.Writer {
+	// TODO: Use environment variables for Kafka URL
+	kafkaURL := "194.147.142.26:9094"
+	writer := &kafka.Writer{
+		Addr:     kafka.TCP(kafkaURL),
+		Topic:    "interactions",
+		Balancer: &kafka.LeastBytes{},
+	}
+	log.Println("Kafka writer initialized for topic 'interactions'")
+	return writer
 }
 
 func InitRoutes(
@@ -89,6 +102,10 @@ func main() {
 	db := ConnectSQL()
 	defer db.Close()
 
+	// Initialize Kafka Writer
+	kafkaWriter := InitKafka()
+	defer kafkaWriter.Close()
+
 	// --- Initialize Layers ---
 
 	// Repositories
@@ -98,11 +115,11 @@ func main() {
 	interactionRepo := repository.NewInteractionRepository(db)
 
 	// Services
-	userService := services.NewUserService(userRepo)
+	userService := services.NewUserService(db, userRepo, playlistRepo)
 	authService := services.NewAuthService(userRepo)
 	songService := services.NewSongService(songRepo)
 	playlistService := services.NewPlaylistService(playlistRepo)
-	interactionService := services.NewInteractionService(interactionRepo)
+	interactionService := services.NewInteractionService(interactionRepo, kafkaWriter)
 
 	// Handlers
 	userHandler := handlers.NewUserHandler(userService)
