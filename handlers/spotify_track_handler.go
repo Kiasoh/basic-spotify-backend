@@ -39,6 +39,7 @@ func (h *SpotifyTrackHandler) ListTracks(w http.ResponseWriter, r *http.Request)
 	limitStr := r.URL.Query().Get("limit")
 	offsetStr := r.URL.Query().Get("offset")
 	sortBy := r.URL.Query().Get("sort_by") // New parameter
+	order := r.URL.Query().Get("order")
 
 	limit, err := strconv.Atoi(limitStr)
 	if err != nil || limit <= 0 {
@@ -52,7 +53,7 @@ func (h *SpotifyTrackHandler) ListTracks(w http.ResponseWriter, r *http.Request)
 
 	log.Printf("Handler: Handling list tracks request with limit %d, offset %d, and sort by %s", limit, offset, sortBy)
 
-	tracks, err := h.Service.List(r.Context(), limit, offset, sortBy)
+	tracks, err := h.Service.List(r.Context(), limit, offset, sortBy, order)
 	if err != nil {
 		// Handle invalid sort field error
 		if err.Error() == fmt.Sprintf("invalid sort field: %s", sortBy) {

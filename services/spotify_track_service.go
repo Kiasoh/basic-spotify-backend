@@ -26,9 +26,9 @@ func (s *SpotifyTrackService) GetByTrackID(ctx context.Context, trackID string) 
 	return track, nil
 }
 
-func (s *SpotifyTrackService) List(ctx context.Context, limit int, offset int, sortBy string) ([]models.SpotifyTrack, error) {
+func (s *SpotifyTrackService) List(ctx context.Context, limit int, offset int, sortBy string, order string) ([]models.SpotifyTrack, error) {
 	log.Printf("Service: Attempting to list tracks with limit %d, offset %d, and sort by %s", limit, offset, sortBy)
-	tracks, err := s.Repo.List(ctx, limit, offset, sortBy)
+	tracks, err := s.Repo.List(ctx, limit, offset, sortBy, order)
 	if err != nil {
 		log.Printf("Service: Error listing tracks: %v", err)
 		return nil, err

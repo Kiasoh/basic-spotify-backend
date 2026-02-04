@@ -10,7 +10,7 @@ import (
 
 type SpotifyTrackRepository interface {
 	GetByTrackID(ctx context.Context, trackID string) (*models.SpotifyTrack, error)
-	List(ctx context.Context, limit int, offset int, sortBy string) ([]models.SpotifyTrack, error)
+	List(ctx context.Context, limit int, offset int, sortBy string, order string) ([]models.SpotifyTrack, error)
 	Search(ctx context.Context, query string, searchField string, limit int, offset int) ([]models.SpotifyTrack, error)
 }
 
@@ -34,7 +34,7 @@ func (r *spotifyTrackRepository) GetByTrackID(ctx context.Context, trackID strin
 	return track, nil
 }
 
-func (r *spotifyTrackRepository) List(ctx context.Context, limit int, offset int, sortBy string) ([]models.SpotifyTrack, error) {
+func (r *spotifyTrackRepository) List(ctx context.Context, limit int, offset int, sortBy string, order string) ([]models.SpotifyTrack, error) {
 	// Default sort by popularity if not specified or invalid
 	if sortBy == "" {
 		sortBy = "popularity"
@@ -55,7 +55,11 @@ func (r *spotifyTrackRepository) List(ctx context.Context, limit int, offset int
 		return nil, fmt.Errorf("invalid sort field: %s", sortBy)
 	}
 
-	query := fmt.Sprintf(`SELECT track_id, artists, album_name, track_name, popularity, duration_ms, explicit, danceability, energy, key, loudness, mode, speechiness, acousticness, instrumentalness, liveness, valence, tempo, time_signature, track_genre FROM spotify_tracks ORDER BY %s DESC LIMIT $1 OFFSET $2`, sortBy)
+	if order != "asc" && order != "desc" {
+		order = "desc"
+	}
+
+	query := fmt.Sprintf(`SELECT track_id, artists, album_name, track_name, popularity, duration_ms, explicit, danceability, energy, key, loudness, mode, speechiness, acousticness, instrumentalness, liveness, valence, tempo, time_signature, track_genre FROM spotify_tracks ORDER BY %s %s LIMIT $1 OFFSET $2`, sortBy, order)
 	rows, err := r.db.Query(ctx, query, limit, offset)
 	if err != nil {
 		return nil, err
