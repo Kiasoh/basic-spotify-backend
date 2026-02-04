@@ -18,7 +18,7 @@ services:
     networks:
       - ds_backend_network
 
-  iot_backend:
+  ds_backend:
     build:
       context: .
       dockerfile: Dockerfile
