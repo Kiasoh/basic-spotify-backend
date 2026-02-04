@@ -18,9 +18,8 @@ import (
 )
 
 func ConnectSQL() *pgxpool.Pool {
-	// TODO: Use environment variables for DSN
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
-		"niflheim", "niflguard", "postgres_ds", "5432", "ds_db")
+		"niflheim", "niflguard", "postgres_ds", "5432", "dsdb")
 
 	poolconfig, err := pgxpool.ParseConfig(dsn)
 	if err != nil {

@@ -2,13 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/kiasoh/basic-spotify-backend/middleware"
 	"github.com/kiasoh/basic-spotify-backend/services"
 )
 
@@ -28,15 +26,6 @@ type createPlaylistRequest struct {
 type updatePlaylistRequest struct {
 	Name        string  `json:"name"`
 	Description *string `json:"description"`
-}
-
-// Helper to get userID from context
-func getUserIDFromContext(r *http.Request) (int, error) {
-	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
-	if !ok {
-		return 0, errors.New("could not retrieve user ID from context")
-	}
-	return userID, nil
 }
 
 func (h *PlaylistHandler) CreatePlaylist(w http.ResponseWriter, r *http.Request) {
