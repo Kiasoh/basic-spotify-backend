@@ -41,8 +41,8 @@ func (s *PlaylistService) ListUserPlaylists(ctx context.Context, ownerID int) ([
 	return s.Repo.ListPlaylistsByOwner(ctx, ownerID)
 }
 
-func (s *PlaylistService) AddSongToPlaylist(ctx context.Context, userID, playlistID, songID int) error {
-	log.Printf("Service: User %d attempting to add song %d to playlist %d", userID, songID, playlistID)
+func (s *PlaylistService) AddTrackToPlaylist(ctx context.Context, userID, playlistID int, trackID string) error {
+	log.Printf("Service: User %d attempting to add track %s to playlist %d", userID, trackID, playlistID)
 
 	playlist, err := s.Repo.GetPlaylistByID(ctx, playlistID)
 	if err != nil {
@@ -58,11 +58,11 @@ func (s *PlaylistService) AddSongToPlaylist(ctx context.Context, userID, playlis
 		return errors.New("forbidden: this playlist is not modifiable")
 	}
 
-	return s.Repo.AddSongToPlaylist(ctx, playlistID, songID)
+	return s.Repo.AddTrackToPlaylist(ctx, playlistID, trackID)
 }
 
-func (s *PlaylistService) RemoveSongFromPlaylist(ctx context.Context, userID, playlistID, songID int) error {
-	log.Printf("Service: User %d attempting to remove song %d from playlist %d", userID, songID, playlistID)
+func (s *PlaylistService) RemoveTrackFromPlaylist(ctx context.Context, userID, playlistID int, trackID string) error {
+	log.Printf("Service: User %d attempting to remove track %s from playlist %d", userID, trackID, playlistID)
 
 	playlist, err := s.Repo.GetPlaylistByID(ctx, playlistID)
 	if err != nil {
@@ -78,7 +78,7 @@ func (s *PlaylistService) RemoveSongFromPlaylist(ctx context.Context, userID, pl
 		return errors.New("forbidden: this playlist is not modifiable")
 	}
 
-	return s.Repo.RemoveSongFromPlaylist(ctx, playlistID, songID)
+	return s.Repo.RemoveTrackFromPlaylist(ctx, playlistID, trackID)
 }
 
 func (s *PlaylistService) UpdatePlaylistDetails(ctx context.Context, userID int, playlistID int, newName string, newDescription *string) (*models.Playlist, error) {
@@ -111,9 +111,7 @@ func (s *PlaylistService) UpdatePlaylistDetails(ctx context.Context, userID int,
 	return playlist, nil
 }
 
-func (s *PlaylistService) GetSongsInPlaylist(ctx context.Context, playlistID int) ([]models.Song, error) {
-	log.Printf("Service: Attempting to get songs for playlist %d", playlistID)
-	// For this, we are not checking ownership, assuming playlists can be viewed publicly.
-	// This could be changed by adding a userID check similar to Add/Remove.
-	return s.Repo.GetSongsInPlaylist(ctx, playlistID)
+func (s *PlaylistService) GetTracksInPlaylist(ctx context.Context, playlistID int) ([]models.SpotifyTrack, error) {
+	log.Printf("Service: Attempting to get tracks for playlist %d", playlistID)
+	return s.Repo.GetTracksInPlaylist(ctx, playlistID)
 }

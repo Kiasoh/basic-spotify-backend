@@ -10,7 +10,7 @@ import (
 type InteractionRepository interface {
 	CreateInteraction(ctx context.Context, interaction *models.Interaction) error
 	GetInteractionsByUser(ctx context.Context, userID int) ([]models.Interaction, error)
-    GetInteractionsForSong(ctx context.Context, songID int) ([]models.Interaction, error)
+	GetInteractionsForTrack(ctx context.Context, trackID string) ([]models.Interaction, error)
 }
 
 type interactionRepository struct {
@@ -22,13 +22,13 @@ func NewInteractionRepository(db *pgxpool.Pool) InteractionRepository {
 }
 
 func (r *interactionRepository) CreateInteraction(ctx context.Context, interaction *models.Interaction) error {
-	query := `INSERT INTO interactions (user_id, song_id, type) VALUES ($1, $2, $3)`
-	_, err := r.db.Exec(ctx, query, interaction.UserID, interaction.SongID, interaction.Type)
+	query := `INSERT INTO interactions (user_id, track_id, type) VALUES ($1, $2, $3)`
+	_, err := r.db.Exec(ctx, query, interaction.UserID, interaction.TrackID, interaction.Type)
 	return err
 }
 
 func (r *interactionRepository) GetInteractionsByUser(ctx context.Context, userID int) ([]models.Interaction, error) {
-	query := `SELECT user_id, song_id, type, created_at FROM interactions WHERE user_id = $1`
+	query := `SELECT user_id, track_id, type, created_at FROM interactions WHERE user_id = $1`
 	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func (r *interactionRepository) GetInteractionsByUser(ctx context.Context, userI
 	var interactions []models.Interaction
 	for rows.Next() {
 		var i models.Interaction
-		if err := rows.Scan(&i.UserID, &i.SongID, &i.Type, &i.CreatedAt); err != nil {
+		if err := rows.Scan(&i.UserID, &i.TrackID, &i.Type, &i.CreatedAt); err != nil {
 			return nil, err
 		}
 		interactions = append(interactions, i)
@@ -46,9 +46,9 @@ func (r *interactionRepository) GetInteractionsByUser(ctx context.Context, userI
 	return interactions, nil
 }
 
-func (r *interactionRepository) GetInteractionsForSong(ctx context.Context, songID int) ([]models.Interaction, error) {
-	query := `SELECT user_id, song_id, type, created_at FROM interactions WHERE song_id = $1`
-	rows, err := r.db.Query(ctx, query, songID)
+func (r *interactionRepository) GetInteractionsForTrack(ctx context.Context, trackID string) ([]models.Interaction, error) {
+	query := `SELECT user_id, track_id, type, created_at FROM interactions WHERE track_id = $1`
+	rows, err := r.db.Query(ctx, query, trackID)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (r *interactionRepository) GetInteractionsForSong(ctx context.Context, song
 	var interactions []models.Interaction
 	for rows.Next() {
 		var i models.Interaction
-		if err := rows.Scan(&i.UserID, &i.SongID, &i.Type, &i.CreatedAt); err != nil {
+		if err := rows.Scan(&i.UserID, &i.TrackID, &i.Type, &i.CreatedAt); err != nil {
 			return nil, err
 		}
 		interactions = append(interactions, i)

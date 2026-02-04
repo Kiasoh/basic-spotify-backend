@@ -22,13 +22,13 @@ func NewInteractionService(repo repository.InteractionRepository, kafkaWriter *k
 	}
 }
 
-func (s *InteractionService) CreateInteraction(ctx context.Context, userID, songID int, interactionType string) error {
-	log.Printf("Service: User %d creating interaction of type '%s' for song %d", userID, interactionType, songID)
+func (s *InteractionService) CreateInteraction(ctx context.Context, userID int, trackID string, interactionType string) error {
+	log.Printf("Service: User %d creating interaction of type '%s' for track %s", userID, interactionType, trackID)
 
 	interaction := &models.Interaction{
-		UserID: userID,
-		SongID: songID,
-		Type:   interactionType,
+		UserID:  userID,
+		TrackID: trackID,
+		Type:    interactionType,
 	}
 
 	err := s.Repo.CreateInteraction(ctx, interaction)
@@ -37,7 +37,7 @@ func (s *InteractionService) CreateInteraction(ctx context.Context, userID, song
 		return err
 	}
 
-	log.Printf("Service: Successfully created interaction for user %d and song %d. Publishing to Kafka.", userID, songID)
+	log.Printf("Service: Successfully created interaction for user %d and track %s. Publishing to Kafka.", userID, trackID)
 
 	// Publish event to Kafka
 	msg := kafka.Message{
@@ -53,7 +53,7 @@ func (s *InteractionService) CreateInteraction(ctx context.Context, userID, song
 	return nil
 }
 
-func (s *InteractionService) GetInteractionsForSong(ctx context.Context, songID int) ([]models.Interaction, error) {
-	log.Printf("Service: Getting interactions for song %d", songID)
-	return s.Repo.GetInteractionsForSong(ctx, songID)
+func (s *InteractionService) GetInteractionsForTrack(ctx context.Context, trackID string) ([]models.Interaction, error) {
+	log.Printf("Service: Getting interactions for track %s", trackID)
+	return s.Repo.GetInteractionsForTrack(ctx, trackID)
 }

@@ -20,7 +20,7 @@ import (
 func ConnectSQL() *pgxpool.Pool {
 	// TODO: Use environment variables for DSN
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
-		"niflheim", "niflguard", "postgres_ds", "5432", "dsdb")
+		"niflheim", "niflguard", "postgres_ds", "5432", "ds_db")
 
 	poolconfig, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
@@ -54,7 +54,7 @@ func InitKafka() *kafka.Writer {
 func InitRoutes(
 	userHandler *handlers.UserHandler,
 	authHandler *handlers.AuthHandler,
-	songHandler *handlers.SongHandler,
+	trackHandler *handlers.SpotifyTrackHandler,
 	playlistHandler *handlers.PlaylistHandler,
 	interactionHandler *handlers.InteractionHandler,
 ) http.Handler {
@@ -69,30 +69,27 @@ func InitRoutes(
 		MaxAge:           300,
 	}))
 
-	// Public routes for authentication
+	// Public routes
 	mux.Post("/register", userHandler.Register)
 	mux.Post("/login", authHandler.Login)
+	mux.Get("/tracks/{trackID}", trackHandler.GetByTrackID) // Make getting a track public
+	mux.Get("/tracks", trackHandler.ListTracks)             // Make listing tracks public
 
-	mux.Get("/songs/{id}", songHandler.GetSong)
 	// Protected routes
 	mux.Group(func(r chi.Router) {
 		r.Use(middleware.Auth)
 
-		// Song routes
-		r.Get("/songs", songHandler.ListSongs)
-		r.Post("/songs", songHandler.CreateSong)
-
 		// Interaction routes
-		r.Post("/songs/{songID}/interact", interactionHandler.CreateInteraction)
-		r.Get("/songs/{songID}/interactions", interactionHandler.GetInteractionsForSong)
+		r.Post("/tracks/{trackID}/interact", interactionHandler.CreateInteraction)
+		r.Get("/tracks/{trackID}/interactions", interactionHandler.GetInteractionsForTrack)
 
 		// Playlist routes
-		r.Get("/playlists", playlistHandler.ListUserPlaylists) // Get playlists for the logged-in user
+		r.Get("/playlists", playlistHandler.ListUserPlaylists)
 		r.Post("/playlists", playlistHandler.CreatePlaylist)
 		r.Put("/playlists/{playlistID}", playlistHandler.UpdatePlaylistDetails)
-		r.Get("/playlists/{playlistID}/songs", playlistHandler.GetSongsInPlaylist)
-		r.Post("/playlists/{playlistID}/songs/{songID}", playlistHandler.AddSongToPlaylist)
-		r.Delete("/playlists/{playlistID}/songs/{songID}", playlistHandler.RemoveSongFromPlaylist)
+		r.Get("/playlists/{playlistID}/tracks", playlistHandler.GetTracksInPlaylist)
+		r.Post("/playlists/{playlistID}/tracks/{trackID}", playlistHandler.AddTrackToPlaylist)
+		r.Delete("/playlists/{playlistID}/tracks/{trackID}", playlistHandler.RemoveTrackFromPlaylist)
 	})
 
 	return mux
@@ -111,26 +108,26 @@ func main() {
 
 	// Repositories
 	userRepo := repository.NewUserRepository(db)
-	songRepo := repository.NewSongRepository(db)
+	trackRepo := repository.NewSpotifyTrackRepository(db)
 	playlistRepo := repository.NewPlaylistRepository(db)
 	interactionRepo := repository.NewInteractionRepository(db)
 
 	// Services
 	userService := services.NewUserService(db, userRepo, playlistRepo)
 	authService := services.NewAuthService(userRepo)
-	songService := services.NewSongService(songRepo)
+	trackService := services.NewSpotifyTrackService(trackRepo)
 	playlistService := services.NewPlaylistService(playlistRepo)
 	interactionService := services.NewInteractionService(interactionRepo, kafkaWriter)
 
 	// Handlers
 	userHandler := handlers.NewUserHandler(userService)
 	authHandler := handlers.NewAuthHandler(authService)
-	songHandler := handlers.NewSongHandler(songService)
+	trackHandler := handlers.NewSpotifyTrackHandler(trackService)
 	playlistHandler := handlers.NewPlaylistHandler(playlistService)
 	interactionHandler := handlers.NewInteractionHandler(interactionService)
 
 	// Initialize routes
-	router := InitRoutes(userHandler, authHandler, songHandler, playlistHandler, interactionHandler)
+	router := InitRoutes(userHandler, authHandler, trackHandler, playlistHandler, interactionHandler)
 
 	server := &http.Server{
 		Addr:    ":8081",

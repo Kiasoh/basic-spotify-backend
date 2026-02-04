@@ -3,16 +3,7 @@ CREATE TABLE IF NOT EXISTS "users" (
     "username" varchar(255) UNIQUE NOT NULL,
     "password" varchar(255) NOT NULL,
     "avg_interest" jsonb NOT NULL DEFAULT '[]',
-    "recomm_plylist_id" INTEGER NOT NULL,
-    "created_at" Timestamp WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS "songs" (
-    "id" serial PRIMARY KEY,
-    "name" varchar(255) NOT NULL,
-    "artist" varchar(255) NOT NULL,
-    "album" varchar(255) NOT NULL,
-    "genre" varchar(255) NOT NULL,
+    "recomm_plylist_id" INTEGER,
     "created_at" Timestamp WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
@@ -25,22 +16,8 @@ CREATE TABLE IF NOT EXISTS "playlists" (
     "created_at" Timestamp WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS "songs_playlists" (
-    "playlist_id" INTEGER NOT NULL REFERENCES "playlists"("id"),
-    "song_id" INTEGER NOT NULL REFERENCES "songs"("id"),
-    "created_at" Timestamp WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS "interactions" (
-    "user_id" INTEGER NOT NULL REFERENCES "users"("id"),
-    "song_id" INTEGER NOT NULL REFERENCES "songs"("id"),
-    "type" varchar(255) NOT NULL,
-    "created_at" Timestamp WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
-
 CREATE TABLE "spotify_tracks" (
-    "track_id" TEXT,
+    "track_id" TEXT PRIMARY KEY,
     "artists" TEXT,
     "album_name" TEXT,
     "track_name" TEXT,
@@ -60,6 +37,19 @@ CREATE TABLE "spotify_tracks" (
     "tempo" DOUBLE PRECISION,
     "time_signature" BIGINT,
     "track_genre" TEXT
+);
+
+CREATE TABLE IF NOT EXISTS "songs_playlists" (
+    "playlist_id" INTEGER NOT NULL REFERENCES "playlists"("id"),
+    "track_id" TEXT NOT NULL REFERENCES "spotify_tracks"("track_id"),
+    "created_at" Timestamp WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS "interactions" (
+    "user_id" INTEGER NOT NULL REFERENCES "users"("id"),
+    "track_id" TEXT NOT NULL REFERENCES "spotify_tracks"("track_id"),
+    "type" varchar(255) NOT NULL,
+    "created_at" Timestamp WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_track_name_trgm ON spotify_tracks USING gin (track_name gin_trgm_ops);

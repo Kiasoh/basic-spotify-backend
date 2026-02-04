@@ -121,7 +121,7 @@ func (h *PlaylistHandler) ListUserPlaylists(w http.ResponseWriter, r *http.Reque
 	json.NewEncoder(w).Encode(playlists)
 }
 
-func (h *PlaylistHandler) AddSongToPlaylist(w http.ResponseWriter, r *http.Request) {
+func (h *PlaylistHandler) AddTrackToPlaylist(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserIDFromContext(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -129,26 +129,26 @@ func (h *PlaylistHandler) AddSongToPlaylist(w http.ResponseWriter, r *http.Reque
 	}
 
 	playlistID, _ := strconv.Atoi(chi.URLParam(r, "playlistID"))
-	songID, _ := strconv.Atoi(chi.URLParam(r, "songID"))
-	if playlistID == 0 || songID == 0 {
-		http.Error(w, "Invalid playlist or song ID", http.StatusBadRequest)
+	trackID := chi.URLParam(r, "trackID")
+	if playlistID == 0 || trackID == "" {
+		http.Error(w, "Invalid playlist or track ID", http.StatusBadRequest)
 		return
 	}
 
-	log.Printf("Handler: User %d adding song %d to playlist %d", userID, songID, playlistID)
-	err = h.Service.AddSongToPlaylist(r.Context(), userID, playlistID, songID)
+	log.Printf("Handler: User %d adding track %s to playlist %d", userID, trackID, playlistID)
+	err = h.Service.AddTrackToPlaylist(r.Context(), userID, playlistID, trackID)
 	if err != nil {
-		if err.Error() == "forbidden: you do not own this playlist" {
+		if err.Error() == "forbidden: you do not own this playlist" || err.Error() == "forbidden: this playlist is not modifiable" {
 			http.Error(w, err.Error(), http.StatusForbidden)
 			return
 		}
-		http.Error(w, "Failed to add song to playlist", http.StatusInternalServerError)
+		http.Error(w, "Failed to add track to playlist", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *PlaylistHandler) RemoveSongFromPlaylist(w http.ResponseWriter, r *http.Request) {
+func (h *PlaylistHandler) RemoveTrackFromPlaylist(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserIDFromContext(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -156,40 +156,40 @@ func (h *PlaylistHandler) RemoveSongFromPlaylist(w http.ResponseWriter, r *http.
 	}
 
 	playlistID, _ := strconv.Atoi(chi.URLParam(r, "playlistID"))
-	songID, _ := strconv.Atoi(chi.URLParam(r, "songID"))
-	if playlistID == 0 || songID == 0 {
-		http.Error(w, "Invalid playlist or song ID", http.StatusBadRequest)
+	trackID := chi.URLParam(r, "trackID")
+	if playlistID == 0 || trackID == "" {
+		http.Error(w, "Invalid playlist or track ID", http.StatusBadRequest)
 		return
 	}
 
-	log.Printf("Handler: User %d removing song %d from playlist %d", userID, songID, playlistID)
-	err = h.Service.RemoveSongFromPlaylist(r.Context(), userID, playlistID, songID)
+	log.Printf("Handler: User %d removing track %s from playlist %d", userID, trackID, playlistID)
+	err = h.Service.RemoveTrackFromPlaylist(r.Context(), userID, playlistID, trackID)
 	if err != nil {
-		if err.Error() == "forbidden: you do not own this playlist" {
+		if err.Error() == "forbidden: you do not own this playlist" || err.Error() == "forbidden: this playlist is not modifiable" {
 			http.Error(w, err.Error(), http.StatusForbidden)
 			return
 		}
-		http.Error(w, "Failed to remove song from playlist", http.StatusInternalServerError)
+		http.Error(w, "Failed to remove track from playlist", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *PlaylistHandler) GetSongsInPlaylist(w http.ResponseWriter, r *http.Request) {
+func (h *PlaylistHandler) GetTracksInPlaylist(w http.ResponseWriter, r *http.Request) {
 	playlistID, _ := strconv.Atoi(chi.URLParam(r, "playlistID"))
 	if playlistID == 0 {
 		http.Error(w, "Invalid playlist ID", http.StatusBadRequest)
 		return
 	}
 
-	log.Printf("Handler: Getting songs for playlist %d", playlistID)
-	songs, err := h.Service.GetSongsInPlaylist(r.Context(), playlistID)
+	log.Printf("Handler: Getting tracks for playlist %d", playlistID)
+	tracks, err := h.Service.GetTracksInPlaylist(r.Context(), playlistID)
 	if err != nil {
-		http.Error(w, "Failed to get songs in playlist", http.StatusInternalServerError)
+		http.Error(w, "Failed to get tracks in playlist", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(songs)
+	json.NewEncoder(w).Encode(tracks)
 }

@@ -15,9 +15,9 @@ type PlaylistRepository interface {
 	UpdatePlaylist(ctx context.Context, playlist *models.Playlist) error
 	DeletePlaylist(ctx context.Context, id int) error
 	ListPlaylistsByOwner(ctx context.Context, ownerID int) ([]models.Playlist, error)
-	AddSongToPlaylist(ctx context.Context, playlistID int, songID int) error
-	RemoveSongFromPlaylist(ctx context.Context, playlistID int, songID int) error
-	GetSongsInPlaylist(ctx context.Context, playlistID int) ([]models.Song, error)
+	AddTrackToPlaylist(ctx context.Context, playlistID int, trackID string) error
+	RemoveTrackFromPlaylist(ctx context.Context, playlistID int, trackID string) error
+	GetTracksInPlaylist(ctx context.Context, playlistID int) ([]models.SpotifyTrack, error)
 }
 
 type playlistRepository struct {
@@ -97,23 +97,23 @@ func (r *playlistRepository) ListPlaylistsByOwner(ctx context.Context, ownerID i
 	return playlists, nil
 }
 
-func (r *playlistRepository) AddSongToPlaylist(ctx context.Context, playlistID int, songID int) error {
-	query := `INSERT INTO songs_playlists (playlist_id, song_id) VALUES ($1, $2)`
-	_, err := r.db.Exec(ctx, query, playlistID, songID)
+func (r *playlistRepository) AddTrackToPlaylist(ctx context.Context, playlistID int, trackID string) error {
+	query := `INSERT INTO songs_playlists (playlist_id, track_id) VALUES ($1, $2)`
+	_, err := r.db.Exec(ctx, query, playlistID, trackID)
 	return err
 }
 
-func (r *playlistRepository) RemoveSongFromPlaylist(ctx context.Context, playlistID int, songID int) error {
-	query := `DELETE FROM songs_playlists WHERE playlist_id = $1 AND song_id = $2`
-	_, err := r.db.Exec(ctx, query, playlistID, songID)
+func (r *playlistRepository) RemoveTrackFromPlaylist(ctx context.Context, playlistID int, trackID string) error {
+	query := `DELETE FROM songs_playlists WHERE playlist_id = $1 AND track_id = $2`
+	_, err := r.db.Exec(ctx, query, playlistID, trackID)
 	return err
 }
 
-func (r *playlistRepository) GetSongsInPlaylist(ctx context.Context, playlistID int) ([]models.Song, error) {
+func (r *playlistRepository) GetTracksInPlaylist(ctx context.Context, playlistID int) ([]models.SpotifyTrack, error) {
 	query := `
-		SELECT s.id, s.name, s.artist, s.album, s.genre, s.created_at 
-		FROM songs s 
-		JOIN songs_playlists sp ON s.id = sp.song_id 
+		SELECT t.track_id, t.artists, t.album_name, t.track_name, t.popularity, t.duration_ms, t.explicit, t.danceability, t.energy, t.key, t.loudness, t.mode, t.speechiness, t.acousticness, t.instrumentalness, t.liveness, t.valence, t.tempo, t.time_signature, t.track_genre
+		FROM spotify_tracks t
+		JOIN songs_playlists sp ON t.track_id = sp.track_id
 		WHERE sp.playlist_id = $1`
 	rows, err := r.db.Query(ctx, query, playlistID)
 	if err != nil {
@@ -121,13 +121,15 @@ func (r *playlistRepository) GetSongsInPlaylist(ctx context.Context, playlistID 
 	}
 	defer rows.Close()
 
-	var songs []models.Song
+	var tracks []models.SpotifyTrack
 	for rows.Next() {
-		var song models.Song
-		if err := rows.Scan(&song.ID, &song.Name, &song.Artist, &song.Album, &song.Genre, &song.CreatedAt); err != nil {
+		var track models.SpotifyTrack
+		if err := rows.Scan(
+			&track.TrackID, &track.Artists, &track.AlbumName, &track.TrackName, &track.Popularity, &track.DurationMs, &track.Explicit, &track.Danceability, &track.Energy, &track.Key, &track.Loudness, &track.Mode, &track.Speechiness, &track.Acousticness, &track.Instrumentalness, &track.Liveness, &track.Valence, &track.Tempo, &track.TimeSignature, &track.TrackGenre,
+		); err != nil {
 			return nil, err
 		}
-		songs = append(songs, song)
+		tracks = append(tracks, track)
 	}
-	return songs, nil
+	return tracks, nil
 }

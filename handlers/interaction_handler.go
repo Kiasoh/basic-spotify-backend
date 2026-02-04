@@ -2,11 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/kiasoh/basic-spotify-backend/middleware"
 	"github.com/kiasoh/basic-spotify-backend/services"
 )
 
@@ -22,6 +23,15 @@ type createInteractionRequest struct {
 	Type string `json:"type"` // e.g., "like", "play"
 }
 
+// NOTE: This helper is duplicated from playlist_handler.go. It could be moved to a shared package.
+func getUserIDFromContext(r *http.Request) (int, error) {
+	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
+	if !ok {
+		return 0, errors.New("could not retrieve user ID from context")
+	}
+	return userID, nil
+}
+
 func (h *InteractionHandler) CreateInteraction(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserIDFromContext(r)
 	if err != nil {
@@ -29,9 +39,9 @@ func (h *InteractionHandler) CreateInteraction(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	songID, err := strconv.Atoi(chi.URLParam(r, "songID"))
-	if err != nil {
-		http.Error(w, "Invalid song ID", http.StatusBadRequest)
+	trackID := chi.URLParam(r, "trackID")
+	if trackID == "" {
+		http.Error(w, "Invalid track ID", http.StatusBadRequest)
 		return
 	}
 
@@ -42,9 +52,9 @@ func (h *InteractionHandler) CreateInteraction(w http.ResponseWriter, r *http.Re
 	}
 	defer r.Body.Close()
 
-	log.Printf("Handler: User %d creating interaction '%s' for song %d", userID, req.Type, songID)
+	log.Printf("Handler: User %d creating interaction '%s' for track %s", userID, req.Type, trackID)
 
-	err = h.Service.CreateInteraction(r.Context(), userID, songID, req.Type)
+	err = h.Service.CreateInteraction(r.Context(), userID, trackID, req.Type)
 	if err != nil {
 		http.Error(w, "Failed to create interaction", http.StatusInternalServerError)
 		return
@@ -53,15 +63,15 @@ func (h *InteractionHandler) CreateInteraction(w http.ResponseWriter, r *http.Re
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (h *InteractionHandler) GetInteractionsForSong(w http.ResponseWriter, r *http.Request) {
-	songID, err := strconv.Atoi(chi.URLParam(r, "songID"))
-	if err != nil {
-		http.Error(w, "Invalid song ID", http.StatusBadRequest)
+func (h *InteractionHandler) GetInteractionsForTrack(w http.ResponseWriter, r *http.Request) {
+	trackID := chi.URLParam(r, "trackID")
+	if trackID == "" {
+		http.Error(w, "Invalid track ID", http.StatusBadRequest)
 		return
 	}
 
-	log.Printf("Handler: Getting interactions for song %d", songID)
-	interactions, err := h.Service.GetInteractionsForSong(r.Context(), songID)
+	log.Printf("Handler: Getting interactions for track %s", trackID)
+	interactions, err := h.Service.GetInteractionsForTrack(r.Context(), trackID)
 	if err != nil {
 		http.Error(w, "Failed to get interactions", http.StatusInternalServerError)
 		return
