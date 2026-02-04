@@ -43,6 +43,7 @@ func InitRoutes(
 	authHandler *handlers.AuthHandler,
 	songHandler *handlers.SongHandler,
 	playlistHandler *handlers.PlaylistHandler,
+	interactionHandler *handlers.InteractionHandler,
 ) http.Handler {
 	mux := chi.NewRouter()
 
@@ -68,6 +69,10 @@ func InitRoutes(
 		r.Post("/songs", songHandler.CreateSong)
 		r.Get("/songs/{id}", songHandler.GetSong)
 
+		// Interaction routes
+		r.Post("/songs/{songID}/interact", interactionHandler.CreateInteraction)
+		r.Get("/songs/{songID}/interactions", interactionHandler.GetInteractionsForSong)
+
 		// Playlist routes
 		r.Get("/playlists", playlistHandler.ListUserPlaylists) // Get playlists for the logged-in user
 		r.Post("/playlists", playlistHandler.CreatePlaylist)
@@ -90,21 +95,24 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	songRepo := repository.NewSongRepository(db)
 	playlistRepo := repository.NewPlaylistRepository(db)
+	interactionRepo := repository.NewInteractionRepository(db)
 
 	// Services
 	userService := services.NewUserService(userRepo)
 	authService := services.NewAuthService(userRepo)
 	songService := services.NewSongService(songRepo)
 	playlistService := services.NewPlaylistService(playlistRepo)
+	interactionService := services.NewInteractionService(interactionRepo)
 
 	// Handlers
 	userHandler := handlers.NewUserHandler(userService)
 	authHandler := handlers.NewAuthHandler(authService)
 	songHandler := handlers.NewSongHandler(songService)
 	playlistHandler := handlers.NewPlaylistHandler(playlistService)
+	interactionHandler := handlers.NewInteractionHandler(interactionService)
 
 	// Initialize routes
-	router := InitRoutes(userHandler, authHandler, songHandler, playlistHandler)
+	router := InitRoutes(userHandler, authHandler, songHandler, playlistHandler, interactionHandler)
 
 	server := &http.Server{
 		Addr:    ":8081",
