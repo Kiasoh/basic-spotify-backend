@@ -89,6 +89,7 @@ func InitRoutes(
 		// Playlist routes
 		r.Get("/playlists", playlistHandler.ListUserPlaylists) // Get playlists for the logged-in user
 		r.Post("/playlists", playlistHandler.CreatePlaylist)
+		r.Put("/playlists/{playlistID}", playlistHandler.UpdatePlaylistDetails)
 		r.Get("/playlists/{playlistID}/songs", playlistHandler.GetSongsInPlaylist)
 		r.Post("/playlists/{playlistID}/songs/{songID}", playlistHandler.AddSongToPlaylist)
 		r.Delete("/playlists/{playlistID}/songs/{songID}", playlistHandler.RemoveSongFromPlaylist)

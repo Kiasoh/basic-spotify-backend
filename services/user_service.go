@@ -74,8 +74,9 @@ func (s *UserService) RegisterUser(ctx context.Context, username string, plainte
 
 	// 2. Create the default playlist, using the new userID as the OwnerID
 	defaultPlaylist := &models.Playlist{
-		Name:    fmt.Sprintf("%s's Recommendations", username),
-		OwnerID: userID,
+		Name:       fmt.Sprintf("%s's Recommendations", username),
+		OwnerID:    userID,
+		Modifyable: false, // Default playlists are not modifiable
 	}
 	playlistID, err := s.PlaylistRepo.CreatePlaylistInTx(ctx, tx, defaultPlaylist)
 	if err != nil {

@@ -38,3 +38,29 @@ CREATE TABLE IF NOT EXISTS "interactions" (
     "created_at" Timestamp WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
+
+CREATE TABLE "spotify_tracks" (
+    "track_id" TEXT,
+    "artists" TEXT,
+    "album_name" TEXT,
+    "track_name" TEXT,
+    "popularity" BIGINT,
+    "duration_ms" BIGINT,
+    "explicit" BOOLEAN,
+    "danceability" DOUBLE PRECISION,
+    "energy" DOUBLE PRECISION,
+    "key" BIGINT,
+    "loudness" DOUBLE PRECISION,
+    "mode" BIGINT,
+    "speechiness" DOUBLE PRECISION,
+    "acousticness" DOUBLE PRECISION,
+    "instrumentalness" DOUBLE PRECISION,
+    "liveness" DOUBLE PRECISION,
+    "valence" DOUBLE PRECISION,
+    "tempo" DOUBLE PRECISION,
+    "time_signature" BIGINT,
+    "track_genre" TEXT
+);
+
+CREATE INDEX idx_track_name_trgm ON spotify_tracks USING gin (track_name gin_trgm_ops);
+CREATE INDEX idx_artists_trgm ON spotify_tracks USING gin (artists gin_trgm_ops);
