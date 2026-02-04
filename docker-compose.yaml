@@ -1,0 +1,41 @@
+services:
+  ds_db:
+    image: postgres:latest
+    container_name: postgres_ds
+    platform: linux/amd64
+    restart: always
+    environment:
+      POSTGRES_DB: ds_db
+      POSTGRES_USER: niflheim
+      POSTGRES_PASSWORD: niflguard
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      # - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
+      - ./config/pg_hba.conf:/var/lib/postgresql/data/18/pg_hba.conf
+    ports:
+      - "5432:5432"
+    networks:
+      - ds_backend_network
+
+  iot_backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/kiasoh/basic-spotify-backend
+    container_name: backend-ds
+    restart: always
+    depends_on:
+      - ds_db
+    env_file:
+      - ./.env
+    ports:
+      - "8081:8081"
+    networks:
+      - ds_backend_network
+
+volumes:
+  pgdata:
+
+networks:
+  ds_backend_network:
