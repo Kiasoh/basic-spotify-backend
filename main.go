@@ -56,7 +56,7 @@ func InitKafka() *kafka.Writer {
 	kafkaURL := "194.147.142.26:9094"
 	writer := &kafka.Writer{
 		Addr:     kafka.TCP(kafkaURL),
-		Topic:    "my-topic", // IMPORTANT: Change this to your desired topic
+		Topic:    "my-topic", 	
 		Balancer: &kafka.LeastBytes{},
 	}
 	log.Println("Kafka writer initialized")
