@@ -1,3 +1,6 @@
+CREATE DATABASE ds_db;
+\c ds_db;
+
 CREATE TABLE IF NOT EXISTS "users" (
     "id" serial PRIMARY KEY,
     "username" varchar(255) UNIQUE NOT NULL,
