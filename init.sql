@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS "songs" (
 CREATE TABLE IF NOT EXISTS "playlists" (
     "id" serial PRIMARY KEY,
     "name" varchar(255) NOT NULL DEFAULT 'playlist #',
+    "description" varchar(255),
     "owner_id" INTEGER NOT NULL REFERENCES "users"("id"),
     "modifyable" boolean NOT NULL DEFAULT true,
     "created_at" Timestamp WITH TIME ZONE NOT NULL DEFAULT now()

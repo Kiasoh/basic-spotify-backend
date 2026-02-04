@@ -28,14 +28,14 @@ func NewUserRepository(db *pgxpool.Pool) UserRepository {
 func (r *userRepository) CreateUser(ctx context.Context, user *models.User) (int, error) {
 	query := `INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id`
 	var id int
-	err := r.db.QueryRow(ctx, query, user.Username, user.Password).Scan(&id)
+	err := r.db.QueryRow(ctx, query, user.Username, user.Password.Bytes()).Scan(&id)
 	return id, err
 }
 
 func (r *userRepository) GetUserByID(ctx context.Context, id int) (*models.User, error) {
 	query := `SELECT id, username, password, created_at FROM users WHERE id = $1`
 	user := &models.User{}
-	err := r.db.QueryRow(ctx, query, id).Scan(&user.ID, &user.Username, &user.Password, &user.CreatedAt)
+	err := r.db.QueryRow(ctx, query, id).Scan(&user.ID, &user.Username, &user.Password.Hash, &user.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (r *userRepository) GetUserByID(ctx context.Context, id int) (*models.User,
 func (r *userRepository) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
 	query := `SELECT id, username, password, created_at FROM users WHERE username = $1`
 	user := &models.User{}
-	err := r.db.QueryRow(ctx, query, username).Scan(&user.ID, &user.Username, &user.Password, &user.CreatedAt)
+	err := r.db.QueryRow(ctx, query, username).Scan(&user.ID, &user.Username, &user.Password.Hash, &user.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (r *userRepository) GetUserByUsername(ctx context.Context, username string)
 
 func (r *userRepository) UpdateUser(ctx context.Context, user *models.User) error {
 	query := `UPDATE users SET username = $1, password = $2 WHERE id = $3`
-	_, err := r.db.Exec(ctx, query, user.Username, user.Password, user.ID)
+	_, err := r.db.Exec(ctx, query, user.Username, user.Password.Bytes(), user.ID)
 	return err
 }
 
