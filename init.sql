@@ -1,6 +1,28 @@
-CREATE DATABASE ds_db;
-\c ds_db;
+SELECT 'Initializing database...' as message;
 
+-- Create database if it doesn't exist
+SELECT 'Creating ds_db database...' as message;
+CREATE DATABASE ds_db;
+
+-- Connect to the database and set up extensions
+\c ds_db
+
+-- Create additional users if needed
+-- CREATE USER another_user WITH PASSWORD 'secure_password';
+
+-- Grant privileges
+-- GRANT ALL PRIVILEGES ON DATABASE ds_db TO niflheim;
+
+-- Create schema
+CREATE SCHEMA IF NOT EXISTS public;
+GRANT ALL ON SCHEMA public TO niflheim;
+
+-- Set default privileges
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO niflheim;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO niflheim;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO niflheim;
+
+SELECT 'Database initialization complete!' as message;
 CREATE TABLE IF NOT EXISTS "users" (
     "id" serial PRIMARY KEY,
     "username" varchar(255) UNIQUE NOT NULL,
