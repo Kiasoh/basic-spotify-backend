@@ -68,12 +68,12 @@ func InitRoutes(
 		MaxAge:           300,
 	}))
 
-	// Public routes
-	mux.Post("/register", userHandler.Register)
-	mux.Post("/login", authHandler.Login)
-	mux.Get("/tracks/{trackID}", trackHandler.GetByTrackID) // Make getting a track public
-	mux.Get("/tracks", trackHandler.ListTracks)             // Make listing tracks public
-
+		// Public routes
+		mux.Post("/register", userHandler.Register)
+		mux.Post("/login", authHandler.Login)
+		mux.Get("/tracks/{trackID}", trackHandler.GetByTrackID)
+		mux.Get("/tracks", trackHandler.ListTracks)
+		mux.Get("/tracks/search", trackHandler.SearchTracks) // New Search Route
 	// Protected routes
 	mux.Group(func(r chi.Router) {
 		r.Use(middleware.Auth)
