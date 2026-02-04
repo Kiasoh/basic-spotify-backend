@@ -56,7 +56,7 @@ func (s *AuthService) generateJWT(userID int) (string, error) {
 	claims := jwt.MapClaims{
 		"sub": userID,                          // Subject (who the token is for)
 		"iat": time.Now().Unix(),               // Issued At
-		"exp": time.Now().Add(time.Hour).Unix(), // Expiration Time (1 hour)
+		"exp": time.Now().Add(24*time.Hour).Unix(), // Expiration Time (1 hour)
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

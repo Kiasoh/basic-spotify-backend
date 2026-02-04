@@ -27,9 +27,13 @@ func NewUserRepository(db *pgxpool.Pool) UserRepository {
 }
 
 func (r *userRepository) CreateUserInTx(ctx context.Context, tx pgx.Tx, user *models.User) (int, error) {
-	query := `INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id`
+	query := `INSERT INTO users (username, password, avg_interest) VALUES ($1, $2, $3) RETURNING id`
 	var id int
-	err := tx.QueryRow(ctx, query, user.Username, user.Password.Bytes()).Scan(&id)
+	avgInterest := user.AvgInterest
+	if avgInterest == nil {
+		avgInterest = models.FloatVector{0,0,0,0,0,0,0,0,0} // Ensure it's explicitly set to 9 empty slice if nil
+	}
+	err := tx.QueryRow(ctx, query, user.Username, user.Password.Bytes(), avgInterest).Scan(&id)
 	return id, err
 }
 
@@ -41,9 +45,9 @@ func (r *userRepository) UpdateRecommPlaylistIDInTx(ctx context.Context, tx pgx.
 
 
 func (r *userRepository) GetUserByID(ctx context.Context, id int) (*models.User, error) {
-	query := `SELECT id, username, password, recomm_plylist_id, created_at FROM users WHERE id = $1`
+	query := `SELECT id, username, password, avg_interest, recomm_plylist_id, created_at FROM users WHERE id = $1`
 	user := &models.User{}
-	err := r.db.QueryRow(ctx, query, id).Scan(&user.ID, &user.Username, &user.Password.Hash, &user.RecommPlaylistID, &user.CreatedAt)
+	err := r.db.QueryRow(ctx, query, id).Scan(&user.ID, &user.Username, &user.Password.Hash, &user.AvgInterest, &user.RecommPlaylistID, &user.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -51,9 +55,9 @@ func (r *userRepository) GetUserByID(ctx context.Context, id int) (*models.User,
 }
 
 func (r *userRepository) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
-	query := `SELECT id, username, password, recomm_plylist_id, created_at FROM users WHERE username = $1`
+	query := `SELECT id, username, password, avg_interest, recomm_plylist_id, created_at FROM users WHERE username = $1`
 	user := &models.User{}
-	err := r.db.QueryRow(ctx, query, username).Scan(&user.ID, &user.Username, &user.Password.Hash, &user.RecommPlaylistID, &user.CreatedAt)
+	err := r.db.QueryRow(ctx, query, username).Scan(&user.ID, &user.Username, &user.Password.Hash, &user.AvgInterest, &user.RecommPlaylistID, &user.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -61,8 +65,12 @@ func (r *userRepository) GetUserByUsername(ctx context.Context, username string)
 }
 
 func (r *userRepository) UpdateUser(ctx context.Context, user *models.User) error {
-	query := `UPDATE users SET username = $1, password = $2, recomm_plylist_id = $3 WHERE id = $4`
-	_, err := r.db.Exec(ctx, query, user.Username, user.Password.Bytes(), user.RecommPlaylistID, user.ID)
+	query := `UPDATE users SET username = $1, password = $2, avg_interest = $3, recomm_plylist_id = $4 WHERE id = $5`
+	avgInterest := user.AvgInterest
+	if avgInterest == nil {
+		avgInterest = models.FloatVector{0,0,0,0,0,0,0,0,0} // Ensure it's explicitly set to 9 empty slice if nil
+	}
+	_, err := r.db.Exec(ctx, query, user.Username, user.Password.Bytes(), avgInterest, user.RecommPlaylistID, user.ID)
 	return err
 }
 
@@ -73,7 +81,7 @@ func (r *userRepository) DeleteUser(ctx context.Context, id int) error {
 }
 
 func (r *userRepository) ListUsers(ctx context.Context) ([]models.User, error) {
-	query := `SELECT id, username, created_at FROM users`
+	query := `SELECT id, username, avg_interest, recomm_plylist_id, created_at FROM users`
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
@@ -83,7 +91,7 @@ func (r *userRepository) ListUsers(ctx context.Context) ([]models.User, error) {
 	var users []models.User
 	for rows.Next() {
 		var user models.User
-		if err := rows.Scan(&user.ID, &user.Username, &user.CreatedAt); err != nil {
+		if err := rows.Scan(&user.ID, &user.Username, &user.AvgInterest, &user.RecommPlaylistID, &user.CreatedAt); err != nil {
 			return nil, err
 		}
 		users = append(users, user)

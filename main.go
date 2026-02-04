@@ -116,7 +116,7 @@ func main() {
 	authService := services.NewAuthService(userRepo)
 	trackService := services.NewSpotifyTrackService(trackRepo)
 	playlistService := services.NewPlaylistService(playlistRepo)
-	interactionService := services.NewInteractionService(interactionRepo, kafkaWriter)
+	interactionService := services.NewInteractionService(interactionRepo, kafkaWriter, trackRepo, userRepo)
 
 	// Handlers
 	userHandler := handlers.NewUserHandler(userService)
