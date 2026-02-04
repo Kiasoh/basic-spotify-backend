@@ -19,7 +19,7 @@ import (
 func ConnectSQL() *pgxpool.Pool {
 	// TODO: Use environment variables for DSN
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
-		"niflheim", "niflguard", "postgres_ds", "5432", "ds_db")
+		"niflheim", "niflguard", "postgres_ds", "5432", "dsdb")
 
 	poolconfig, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
@@ -60,6 +60,7 @@ func InitRoutes(
 	mux.Post("/register", userHandler.Register)
 	mux.Post("/login", authHandler.Login)
 
+	mux.Get("/songs/{id}", songHandler.GetSong)
 	// Protected routes
 	mux.Group(func(r chi.Router) {
 		r.Use(middleware.Auth)
@@ -67,7 +68,6 @@ func InitRoutes(
 		// Song routes
 		r.Get("/songs", songHandler.ListSongs)
 		r.Post("/songs", songHandler.CreateSong)
-		r.Get("/songs/{id}", songHandler.GetSong)
 
 		// Interaction routes
 		r.Post("/songs/{songID}/interact", interactionHandler.CreateInteraction)

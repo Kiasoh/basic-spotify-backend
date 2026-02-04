@@ -5,12 +5,11 @@ services:
     platform: linux/amd64
     restart: always
     environment:
-      POSTGRES_DB: ds_db
+      POSTGRES_DB: dsdb
       POSTGRES_USER: niflheim
       POSTGRES_PASSWORD: niflguard
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/01-init.sql
-      # - pgdata:/var/lib/postgresql/data
       - pgdata:/var/lib/postgresql
       - ./config/pg_hba.conf:/var/lib/postgresql/data/18/pg_hba.conf
     ports:
