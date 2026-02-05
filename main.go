@@ -72,8 +72,15 @@ func InitRoutes(
 	mux.Post("/register", userHandler.Register)
 	mux.Post("/login", authHandler.Login)
 	mux.Get("/tracks/{trackID}", trackHandler.GetByTrackID)
-	mux.Get("/tracks", trackHandler.ListTracks)
-	mux.Get("/tracks/search", trackHandler.SearchTracks) // New Search Route
+
+	// Routes that use OptionalAuth middleware to conditionally enrich data
+	mux.Group(func(r chi.Router) {
+		r.Use(middleware.OptionalAuth)
+		r.Get("/tracks", trackHandler.ListTracks)
+		r.Get("/tracks/search", trackHandler.SearchTracks)
+		r.Get("/playlists/{playlistID}/tracks", playlistHandler.GetTracksInPlaylist)
+	})
+
 	// Protected routes
 	mux.Group(func(r chi.Router) {
 		r.Use(middleware.Auth)
@@ -86,7 +93,7 @@ func InitRoutes(
 		r.Get("/playlists", playlistHandler.ListUserPlaylists)
 		r.Post("/playlists", playlistHandler.CreatePlaylist)
 		r.Put("/playlists/{playlistID}", playlistHandler.UpdatePlaylistDetails)
-		r.Get("/playlists/{playlistID}/tracks", playlistHandler.GetTracksInPlaylist)
+		// playlistHandler.GetTracksInPlaylist moved to optional auth group
 		r.Post("/playlists/{playlistID}/tracks/{trackID}", playlistHandler.AddTrackToPlaylist)
 		r.Delete("/playlists/{playlistID}/tracks/{trackID}", playlistHandler.RemoveTrackFromPlaylist)
 	})
