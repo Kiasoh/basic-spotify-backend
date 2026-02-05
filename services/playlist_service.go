@@ -10,11 +10,12 @@ import (
 )
 
 type PlaylistService struct {
-	Repo repository.PlaylistRepository
+	Repo             repository.PlaylistRepository
+	InteractionService *InteractionService // Add this field
 }
 
-func NewPlaylistService(repo repository.PlaylistRepository) *PlaylistService {
-	return &PlaylistService{Repo: repo}
+func NewPlaylistService(repo repository.PlaylistRepository, interactionService *InteractionService) *PlaylistService {
+	return &PlaylistService{Repo: repo, InteractionService: interactionService}
 }
 
 func (s *PlaylistService) CreatePlaylist(ctx context.Context, ownerID int, name string, description *string) (*models.Playlist, error) {

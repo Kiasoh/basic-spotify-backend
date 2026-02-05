@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kiasoh/basic-spotify-backend/models"
@@ -11,6 +12,7 @@ type InteractionRepository interface {
 	CreateInteraction(ctx context.Context, interaction *models.Interaction) error
 	GetInteractionsByUser(ctx context.Context, userID int) ([]models.Interaction, error)
 	GetInteractionsForTrack(ctx context.Context, trackID string) ([]models.Interaction, error)
+	GetLatestInteractionsForUserTracks(ctx context.Context, userID int, trackIDs []string) (map[string]string, error)
 }
 
 type interactionRepository struct {
@@ -63,4 +65,41 @@ func (r *interactionRepository) GetInteractionsForTrack(ctx context.Context, tra
 		interactions = append(interactions, i)
 	}
 	return interactions, nil
+}
+
+func (r *interactionRepository) GetLatestInteractionsForUserTracks(ctx context.Context, userID int, trackIDs []string) (map[string]string, error) {
+	if len(trackIDs) == 0 {
+		return make(map[string]string), nil
+	}
+
+	query := `
+		SELECT DISTINCT ON (track_id)
+			track_id, type
+		FROM
+			interactions
+		WHERE
+			user_id = $1 AND track_id = ANY($2)
+		ORDER BY
+			track_id, created_at DESC
+	`
+	rows, err := r.db.Query(ctx, query, userID, trackIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get latest interactions: %w", err)
+	}
+	defer rows.Close()
+
+	interactionMap := make(map[string]string)
+	for rows.Next() {
+		var trackID, interactionType string
+		if err := rows.Scan(&trackID, &interactionType); err != nil {
+			return nil, fmt.Errorf("failed to scan interaction row: %w", err)
+		}
+		interactionMap[trackID] = interactionType
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error during rows iteration: %w", err)
+	}
+
+	return interactionMap, nil
 }

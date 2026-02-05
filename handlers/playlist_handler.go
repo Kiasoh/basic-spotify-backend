@@ -7,6 +7,8 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/kiasoh/basic-spotify-backend/middleware" // Added
+	"github.com/kiasoh/basic-spotify-backend/models"     // Added
 	"github.com/kiasoh/basic-spotify-backend/services"
 )
 
@@ -178,7 +180,38 @@ func (h *PlaylistHandler) GetTracksInPlaylist(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	// Prepare response with interaction states if user is authenticated
+	trackResponses := make([]models.SpotifyTrackResponse, len(tracks))
+	userID, _ := r.Context().Value(middleware.UserIDKey).(int) // Get userID, 0 if not present
+
+	if userID != 0 { // User is authenticated, fetch interaction states
+		trackIDs := make([]string, len(tracks))
+		for i, track := range tracks {
+			trackIDs[i] = track.TrackID
+		}
+
+		interactionStates, err := h.Service.InteractionService.GetTrackInteractionStates(r.Context(), userID, trackIDs)
+		if err != nil {
+			log.Printf("Handler: Error getting interaction states for user %d: %v", userID, err)
+			// Continue without interaction states, as per requirement
+		}
+
+		for i, track := range tracks {
+			trackResponses[i].SpotifyTrack = track
+			if state, ok := interactionStates[track.TrackID]; ok {
+				trackResponses[i].InteractionState = state
+			} else {
+				trackResponses[i].InteractionState = models.TrackStateNeutral // Default to neutral
+			}
+		}
+	} else { // User is not authenticated, just populate SpotifyTrack
+		for i, track := range tracks {
+			trackResponses[i].SpotifyTrack = track
+			// InteractionState will be omitted due to omitempty tag
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(tracks)
+	json.NewEncoder(w).Encode(trackResponses)
 }

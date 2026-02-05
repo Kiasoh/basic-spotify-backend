@@ -42,6 +42,8 @@ func (s *InteractionService) HandleInteraction(ctx context.Context, userID int, 
 		weight = -2.5
 	case "dislike":
 		weight = -4.0
+	case "undislike":
+		weight = 4.5
 	case "skip":
 		weight = -1.0
 	case "play":
@@ -123,4 +125,30 @@ func (s *InteractionService) CreateInteraction(ctx context.Context, userID int, 
 func (s *InteractionService) GetInteractionsForTrack(ctx context.Context, trackID string) ([]models.Interaction, error) {
 	log.Printf("Service: Getting interactions for track %s", trackID)
 	return s.Repo.GetInteractionsForTrack(ctx, trackID)
+}
+
+func (s *InteractionService) GetTrackInteractionStates(ctx context.Context, userID int, trackIDs []string) (map[string]models.TrackInteractionState, error) {
+	interactionMap, err := s.Repo.GetLatestInteractionsForUserTracks(ctx, userID, trackIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	trackStates := make(map[string]models.TrackInteractionState)
+	for _, trackID := range trackIDs {
+		interactionType, found := interactionMap[trackID]
+		if !found {
+			trackStates[trackID] = models.TrackStateNeutral
+			continue
+		}
+
+		switch interactionType {
+		case "like":
+			trackStates[trackID] = models.TrackStateLiked
+		case "dislike":
+			trackStates[trackID] = models.TrackStateDisliked
+		default:
+			trackStates[trackID] = models.TrackStateNeutral
+		}
+	}
+	return trackStates, nil
 }

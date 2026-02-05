@@ -9,11 +9,12 @@ import (
 )
 
 type SpotifyTrackService struct {
-	Repo repository.SpotifyTrackRepository
+	Repo             repository.SpotifyTrackRepository
+	InteractionService *InteractionService // Add this field
 }
 
-func NewSpotifyTrackService(repo repository.SpotifyTrackRepository) *SpotifyTrackService {
-	return &SpotifyTrackService{Repo: repo}
+func NewSpotifyTrackService(repo repository.SpotifyTrackRepository, interactionService *InteractionService) *SpotifyTrackService {
+	return &SpotifyTrackService{Repo: repo, InteractionService: interactionService}
 }
 
 func (s *SpotifyTrackService) GetByTrackID(ctx context.Context, trackID string) (*models.SpotifyTrack, error) {

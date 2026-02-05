@@ -8,6 +8,8 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/kiasoh/basic-spotify-backend/middleware" // Added
+	"github.com/kiasoh/basic-spotify-backend/models"     // Added
 	"github.com/kiasoh/basic-spotify-backend/services"
 )
 
@@ -17,6 +19,41 @@ type SpotifyTrackHandler struct {
 
 func NewSpotifyTrackHandler(service *services.SpotifyTrackService) *SpotifyTrackHandler {
 	return &SpotifyTrackHandler{Service: service}
+}
+
+// enrichTracksWithInteractionState processes a slice of SpotifyTrack and returns SpotifyTrackResponse
+// with interaction states if a user ID is present in the request context.
+func (h *SpotifyTrackHandler) enrichTracksWithInteractionState(r *http.Request, tracks []models.SpotifyTrack) ([]models.SpotifyTrackResponse, error) {
+	trackResponses := make([]models.SpotifyTrackResponse, len(tracks))
+	userID, _ := r.Context().Value(middleware.UserIDKey).(int) // Get userID, 0 if not present
+
+	if userID != 0 { // User is authenticated, fetch interaction states
+		trackIDs := make([]string, len(tracks))
+		for i, track := range tracks {
+			trackIDs[i] = track.TrackID
+		}
+
+		interactionStates, err := h.Service.InteractionService.GetTrackInteractionStates(r.Context(), userID, trackIDs)
+		if err != nil {
+			log.Printf("Handler: Error getting interaction states for user %d: %v", userID, err)
+			// Continue without interaction states if there's an error
+		}
+
+		for i, track := range tracks {
+			trackResponses[i].SpotifyTrack = track
+			if state, ok := interactionStates[track.TrackID]; ok {
+				trackResponses[i].InteractionState = state
+			} else {
+				trackResponses[i].InteractionState = models.TrackStateNeutral // Default to neutral
+			}
+		}
+	} else { // User is not authenticated, just populate SpotifyTrack
+		for i, track := range tracks {
+			trackResponses[i].SpotifyTrack = track
+			// InteractionState will be omitted due to omitempty tag
+		}
+	}
+	return trackResponses, nil
 }
 
 func (h *SpotifyTrackHandler) GetByTrackID(w http.ResponseWriter, r *http.Request) {
@@ -64,9 +101,16 @@ func (h *SpotifyTrackHandler) ListTracks(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	trackResponses, err := h.enrichTracksWithInteractionState(r, tracks)
+	if err != nil {
+		log.Printf("Handler: Error enriching tracks with interaction state in ListTracks: %v", err)
+		http.Error(w, "Failed to process tracks", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(tracks)
+	json.NewEncoder(w).Encode(trackResponses)
 }
 
 func (h *SpotifyTrackHandler) SearchTracks(w http.ResponseWriter, r *http.Request) {
@@ -103,7 +147,14 @@ func (h *SpotifyTrackHandler) SearchTracks(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	trackResponses, err := h.enrichTracksWithInteractionState(r, tracks)
+	if err != nil {
+		log.Printf("Handler: Error enriching tracks with interaction state in SearchTracks: %v", err)
+		http.Error(w, "Failed to process tracks", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(tracks)
+	json.NewEncoder(w).Encode(trackResponses)
 }
