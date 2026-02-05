@@ -18,6 +18,7 @@ type PlaylistRepository interface {
 	AddTrackToPlaylist(ctx context.Context, playlistID int, trackID string) error
 	RemoveTrackFromPlaylist(ctx context.Context, playlistID int, trackID string) error
 	GetTracksInPlaylist(ctx context.Context, playlistID int) ([]models.SpotifyTrack, error)
+	GetTrackInPlaylist(ctx context.Context, playlistID int, trackID string) (*models.SpotifyTrack, error)
 }
 
 type playlistRepository struct {
@@ -107,6 +108,21 @@ func (r *playlistRepository) RemoveTrackFromPlaylist(ctx context.Context, playli
 	query := `DELETE FROM songs_playlists WHERE playlist_id = $1 AND track_id = $2`
 	_, err := r.db.Exec(ctx, query, playlistID, trackID)
 	return err
+}
+
+func (r *playlistRepository) GetTrackInPlaylist(ctx context.Context, playlistID int, trackID string) (*models.SpotifyTrack, error) {
+	query := `
+		SELECT t.track_id, t.artists, t.album_name, t.track_name, t.popularity, t.duration_ms, t.explicit, t.danceability, t.energy, t.key, t.loudness, t.mode, t.speechiness, t.acousticness, t.instrumentalness, t.liveness, t.valence, t.tempo, t.time_signature, t.track_genre
+		FROM spotify_tracks 
+		WHERE playlist_id = $1 and track_id = $2`
+
+	var track models.SpotifyTrack
+	err := r.db.QueryRow(ctx, query, playlistID, trackID).Scan(
+		&track.TrackID, &track.Artists, &track.AlbumName, &track.TrackName, &track.Popularity, &track.DurationMs, &track.Explicit, &track.Danceability, &track.Energy, &track.Key, &track.Loudness, &track.Mode, &track.Speechiness, &track.Acousticness, &track.Instrumentalness, &track.Liveness, &track.Valence, &track.Tempo, &track.TimeSignature, &track.TrackGenre)
+	if err != nil {
+		return nil, err
+	}
+	return &track, nil
 }
 
 func (r *playlistRepository) GetTracksInPlaylist(ctx context.Context, playlistID int) ([]models.SpotifyTrack, error) {

@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"log"
+	"runtime/trace"
 
 	"github.com/kiasoh/basic-spotify-backend/models"
 	"github.com/kiasoh/basic-spotify-backend/repository"
 )
 
 type PlaylistService struct {
-	Repo             repository.PlaylistRepository
+	Repo               repository.PlaylistRepository
 	InteractionService *InteractionService // Add this field
 }
 
@@ -59,6 +60,12 @@ func (s *PlaylistService) AddTrackToPlaylist(ctx context.Context, userID, playli
 		return errors.New("forbidden: this playlist is not modifiable")
 	}
 
+	//temp and fast fix
+	track, err := s.Repo.GetTrackInPlaylist(ctx, playlistID, trackID)
+	if track != nil {
+		return nil
+	}
+
 	return s.Repo.AddTrackToPlaylist(ctx, playlistID, trackID)
 }
 
@@ -77,6 +84,12 @@ func (s *PlaylistService) RemoveTrackFromPlaylist(ctx context.Context, userID, p
 	if !playlist.Modifyable {
 		log.Printf("Service: User %d cannot modify unmodifiable playlist %d", userID, playlistID)
 		return errors.New("forbidden: this playlist is not modifiable")
+	}
+
+	//temp and fast fix
+	track, err := s.Repo.GetTrackInPlaylist(ctx, playlistID, trackID)
+	if track == nil {
+		return nil
 	}
 
 	return s.Repo.RemoveTrackFromPlaylist(ctx, playlistID, trackID)
