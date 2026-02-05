@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log"
-	"runtime/trace"
 
 	"github.com/kiasoh/basic-spotify-backend/models"
 	"github.com/kiasoh/basic-spotify-backend/repository"
