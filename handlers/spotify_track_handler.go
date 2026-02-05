@@ -67,9 +67,30 @@ func (h *SpotifyTrackHandler) GetByTrackID(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Prepare response with interaction states if user is authenticated
+	var trackResponse models.SpotifyTrackResponse
+	trackResponse.SpotifyTrack = *track // Dereference the pointer
+
+	userID, _ := r.Context().Value(middleware.UserIDKey).(int) // Get userID, 0 if not present
+
+	if userID != 0 { // User is authenticated, fetch interaction state
+		interactionStates, err := h.Service.InteractionService.GetTrackInteractionStates(r.Context(), userID, []string{trackID})
+		if err != nil {
+			log.Printf("Handler: Error getting interaction state for user %d and track %s: %v", userID, trackID, err)
+			// Continue without interaction state if there's an error
+		}
+
+		if state, ok := interactionStates[trackID]; ok {
+			trackResponse.InteractionState = state
+		} else {
+			trackResponse.InteractionState = models.TrackStateNeutral // Default to neutral
+		}
+	}
+	// If user is not authenticated, InteractionState will be omitted due to omitempty tag
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(track)
+	json.NewEncoder(w).Encode(trackResponse)
 }
 
 func (h *SpotifyTrackHandler) ListTracks(w http.ResponseWriter, r *http.Request) {

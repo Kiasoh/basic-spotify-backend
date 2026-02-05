@@ -68,14 +68,14 @@ func InitRoutes(
 		MaxAge:           300,
 	}))
 
-	// Public routes
+	// Public routes (fully unauthenticated, e.g., for basic registration/login)
 	mux.Post("/register", userHandler.Register)
 	mux.Post("/login", authHandler.Login)
-	mux.Get("/tracks/{trackID}", trackHandler.GetByTrackID)
 
 	// Routes that use OptionalAuth middleware to conditionally enrich data
 	mux.Group(func(r chi.Router) {
 		r.Use(middleware.OptionalAuth)
+		r.Get("/tracks/{trackID}", trackHandler.GetByTrackID) // Moved here
 		r.Get("/tracks", trackHandler.ListTracks)
 		r.Get("/tracks/search", trackHandler.SearchTracks)
 		r.Get("/playlists/{playlistID}/tracks", playlistHandler.GetTracksInPlaylist)
