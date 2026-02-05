@@ -5,15 +5,17 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/kiasoh/basic-spotify-backend/models"
 	"github.com/kiasoh/basic-spotify-backend/services"
 )
 
 type UserHandler struct {
-	Service *services.UserService
+	Service     *services.UserService
+	authService *services.AuthService
 }
 
-func NewUserHandler(service *services.UserService) *UserHandler {
-	return &UserHandler{Service: service}
+func NewUserHandler(service *services.UserService, authService *services.AuthService) *UserHandler {
+	return &UserHandler{Service: service, authService: authService}
 }
 
 type registerRequest struct {
@@ -51,9 +53,24 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	user.Password.Hash = nil
 	user.Password.Plaintext = nil
 
+	// Generate and set the JWT token
+	token, err := h.authService.GenerateJWT(user.ID)
+	if err != nil {
+		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		return
+	}
+
+	response := struct {
+		User  *models.User `json:"user"`
+		Token string       `json:"token"`
+	}{
+		User:  user,
+		Token: token,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(user); err != nil {
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Error encoding registration response: %v", err)
 	}
 }

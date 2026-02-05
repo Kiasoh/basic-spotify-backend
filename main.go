@@ -68,12 +68,12 @@ func InitRoutes(
 		MaxAge:           300,
 	}))
 
-		// Public routes
-		mux.Post("/register", userHandler.Register)
-		mux.Post("/login", authHandler.Login)
-		mux.Get("/tracks/{trackID}", trackHandler.GetByTrackID)
-		mux.Get("/tracks", trackHandler.ListTracks)
-		mux.Get("/tracks/search", trackHandler.SearchTracks) // New Search Route
+	// Public routes
+	mux.Post("/register", userHandler.Register)
+	mux.Post("/login", authHandler.Login)
+	mux.Get("/tracks/{trackID}", trackHandler.GetByTrackID)
+	mux.Get("/tracks", trackHandler.ListTracks)
+	mux.Get("/tracks/search", trackHandler.SearchTracks) // New Search Route
 	// Protected routes
 	mux.Group(func(r chi.Router) {
 		r.Use(middleware.Auth)
@@ -119,7 +119,7 @@ func main() {
 	interactionService := services.NewInteractionService(interactionRepo, kafkaWriter, trackRepo, userRepo)
 
 	// Handlers
-	userHandler := handlers.NewUserHandler(userService)
+	userHandler := handlers.NewUserHandler(userService, authService)
 	authHandler := handlers.NewAuthHandler(authService)
 	trackHandler := handlers.NewSpotifyTrackHandler(trackService)
 	playlistHandler := handlers.NewPlaylistHandler(playlistService)

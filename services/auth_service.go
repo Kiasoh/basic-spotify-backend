@@ -42,7 +42,7 @@ func (s *AuthService) Login(ctx context.Context, username, plaintextPassword str
 	}
 
 	log.Printf("User %s authenticated successfully. Generating token.", username)
-	token, err := s.generateJWT(user.ID)
+	token, err := s.GenerateJWT(user.ID)
 	if err != nil {
 		log.Printf("Error generating JWT for user %s: %v", username, err)
 		return "", errors.New("error generating token")
@@ -52,7 +52,7 @@ func (s *AuthService) Login(ctx context.Context, username, plaintextPassword str
 }
 
 // generateJWT creates a new JWT token for a given user ID.
-func (s *AuthService) generateJWT(userID int) (string, error) {
+func (s *AuthService) GenerateJWT(userID int) (string, error) {
 	claims := jwt.MapClaims{
 		"sub": userID,                          // Subject (who the token is for)
 		"iat": time.Now().Unix(),               // Issued At
