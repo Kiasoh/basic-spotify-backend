@@ -3,7 +3,7 @@
 This project is a backend application developed in Go, simulating core functionalities of a music streaming service like Spotify. It provides user authentication, track listing and searching, playlist management, and user interaction tracking. A key feature is the ability to show a user's interaction state (liked, disliked, or neutral) with tracks, conditional on user authentication.
 
 ## Links To Other Repos:
-- **Frontend**: [repo](github.com/DelaraJ/music_recommender_system)
+- **Frontend**: [repo](https://github.com/DelaraJ/music_recommender_system)
 - **Spark (Recommendation System)**: [repo]()
 
 ## Features
